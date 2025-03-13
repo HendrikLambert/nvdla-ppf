@@ -34,17 +34,19 @@ int main (int argc, char *argv[])
   }
 
   FilterBank fb = FilterBank(false, channels, taps, window);
-  //fb.printWeights();
+  // fb.printWeights();
   fb.reverseTaps();
 
   FIR fir(taps, false);
   fir.setWeights(fb.getWeights(0));
-  fir.processNextSample(fcomplex(1,0));
+  
+  fcomplex sample = fir.processNextSample(fcomplex(1,0));
+  cerr  << sample.real() << endl;
 
   for (int i = 1; i < taps; i++)
   {
-    fcomplex sample = fir.processNextSample(fcomplex(0,0));
-    cout  << sample.real() << endl;
+    sample = fir.processNextSample(fcomplex(0,0));
+    cerr  << sample.real() << endl;
   }
   
 

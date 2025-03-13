@@ -11,7 +11,7 @@
 #    	gnuplot home:     http://www.gnuplot.info
 #    	faq, bugs, etc:   type "help FAQ"
 #    	immediate help:   type "help"  (plot window: hit 'h')
-set terminal pdf
+set terminal jpeg
 # set output
 unset clip points
 set clip one
@@ -107,7 +107,7 @@ set xlabel "filter tap"
 set xlabel  offset character 0, 0, 0 font "" textcolor lt -1 norotate
 set x2label "" 
 set x2label  offset character 0, 0, 0 font "" textcolor lt -1 norotate
-set xrange [ 0 : 16 ] noreverse nowriteback
+set xrange [ 0 : 15 ] noreverse nowriteback
 set x2range [ * : * ] noreverse nowriteback
 set ylabel "" 
 set ylabel  offset character 0, 0, 0 font "" textcolor lt -1 rotate by -270

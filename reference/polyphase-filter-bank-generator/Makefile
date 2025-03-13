@@ -15,11 +15,11 @@ polyphase-filter-bank-generator:	$(CC_OBJECTS)
 		$(CC) $^ -o $@ $(CC_LINK_FLAGS)
 
 plot: polyphase-filter-bank-generator
-	./polyphase-filter-bank-generator 256 16 HAMMING > HAMMING-example.data
-	./polyphase-filter-bank-generator 256 16 BLACKMAN > BLACKMAN-example.data
-	./polyphase-filter-bank-generator 256 16 GAUSSIAN > GAUSSIAN-example.data
-	./polyphase-filter-bank-generator 256 16 KAISER > KAISER-example.data
-	gnuplot example.gnuplot > example.pdf
+	./polyphase-filter-bank-generator 256 16 HAMMING 2> HAMMING-example.data
+	./polyphase-filter-bank-generator 256 16 BLACKMAN 2> BLACKMAN-example.data
+	./polyphase-filter-bank-generator 256 16 GAUSSIAN 2> GAUSSIAN-example.data
+	./polyphase-filter-bank-generator 256 16 KAISER 2> KAISER-example.data
+	gnuplot example.gnuplot > example.jpg
 
 clean:
 	rm -f *.o polyphase-filter-bank-generator *~ HAMMING-example.data BLACKMAN-example.data GAUSSIAN-example.data KAISER-example.data example.pdf

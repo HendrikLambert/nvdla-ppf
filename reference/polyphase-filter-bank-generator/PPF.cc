@@ -57,11 +57,11 @@ void PPF::filter(const std::vector<fcomplex> &in, boost::multi_array<fcomplex, 2
 {
   for (int chan = 0; chan < (int) nrChannels; chan ++) {
     for (unsigned time = 0; time < nrTaps - 1 + nrSamplesPerIntegration; time ++) {
-      // fcomplex sample = in[nrChannels * time + chan];
+      fcomplex sample = in[nrChannels * time + chan];
 	    // Above is in line with the current code that runs at LOFAR,
       // the line below was the reference implementation, but
       // seems to be wrong.
-      fcomplex sample = in[chan*nrSamplesPerIntegration + time];
+      // fcomplex sample = in[chan*nrSamplesPerIntegration + time];
 	    
       FFTinData[time][chan] = FIRs[chan].processNextSample(sample);
     }

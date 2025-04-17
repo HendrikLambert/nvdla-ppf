@@ -34,7 +34,7 @@ int main (int argc, char *argv[])
   }
 
   FilterBank fb = FilterBank(false, channels, taps, window);
-  // fb.printWeights();
+  fb.printWeights();
   fb.reverseTaps();
 
   FIR fir(taps, false);

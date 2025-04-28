@@ -164,6 +164,7 @@ def print_tensor_desc_list(obj:TensorDescListEntry, spaces:int = 0):
         DataFormat.NCHW: "NCHW",
         DataFormat.NHWC: "NHWC",
         DataFormat.UNKNOWN: "UNKNOWN",
+        3: "NOT IN FBS",
     }
     print(f'{" " * (spaces + INDENT)}TensorDesc data_format: {data_formats[obj.DataFormat()]}')
     

@@ -94,50 +94,46 @@ def test_fir_filter():
     # # print(out[0, -1, 0, 0].item())
     print(out)
     
+
+def export_model():
+    P = 256
+    M = 16
+    ref_weights = ref_kaiser_weights(P, M, reversed=True)
     
+    ppf_model = PPFModel(P, M, ref_weights)
+    
+    
+    example_inputs = torch.zeros(2, 256, 1, 16) 
+    example_inputs[0, 0, 0, 0] = 1.0
+    example_inputs[0, 0, 0, 1] = 1.0
+    example_inputs[0, 0, 0, 2] = 2.0
+
+    out = ppf_model(example_inputs)    
+    print(out[0, 0, :, :].item())
+    
+
+    torch.onnx.export(ppf_model, example_inputs, "ppf.onnx",
+                  input_names=['input'],
+                  output_names=['output'],
+                #   dynamic_axes={
+                #     'input': {0: 'batch_size'},
+                #     'output': {0: 'batch_size'}
+                #   }
+                )
 
     
 def main():
     
-    test_fir_filter()
+    # test_fir_filter()
     
-    # P = 256
-    # M = 16
-    # ref_weights = ref_kaiser_weights(P, M, reversed=True)
+    P = 256
+    M = 16
+    ref_weights = ref_kaiser_weights(P, M, reversed=True)
     
-    # ppf_model = PPFModel(P, M, ref_weights)
-    
-    
-    # example_inputs = torch.ones(1, 256, 1, 16)
-    
-    # # example_inputs = torch.ones(4*16, 16, 16, 16)
-
-    # out = ppf_model(example_inputs)
-    # print(out)
-    # print(out.shape)
-    # print()
-    
-    # kaiser_weights = create_kaiser_weights(256, 16)
-    # plot_kaiser_weights(kaiser_weights)
-    
-    # print(ref_weights.shape)
-    
-    # plt.plot(ref_weights)
-    # plt.plot(kaiser_weights)
-    # plt.title("Kaiser Window")
-    # plt.show()
+    ppf_model = PPFModel(P, M, ref_weights)
     
     
     
-
-    # torch.onnx.export(ppf_model, example_inputs, "ppf.onnx",
-    #               input_names=['input'],
-    #               output_names=['output'],
-    #             #   dynamic_axes={
-    #             #     'input': {0: 'batch_size'},
-    #             #     'output': {0: 'batch_size'}
-    #             #   }
-    #             )
     
     
 

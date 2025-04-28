@@ -153,8 +153,8 @@ int main() {
     printTensorDesc(outputTensorDesc);
 
     // Setup host buffers
-    void* hostInputBuffer = malloc(inputTensorDesc[0].size);
-    void* hostOutputBuffer = malloc(outputTensorDesc[0].size);
+    __half* hostInputBuffer = (__half*) malloc(inputTensorDesc[0].size);
+    __half* hostOutputBuffer = (__half*) malloc(outputTensorDesc[0].size);
     if (hostInputBuffer == NULL || hostOutputBuffer == NULL) {
         cout << "Error: Unable to malloc" << endl;
         return -1;
@@ -162,11 +162,29 @@ int main() {
 
     // memset(hostInputBuffer, 0, inputTensorDesc[0].size);
     // Fill input buffer with data
-    __half* halfInputBuffer = (__half*) hostInputBuffer;
     for (unsigned int i = 0; i < inputTensorDesc[0].size/2; i++) {
         __half val = __float2half(0.0f);
-        halfInputBuffer[i] = val;
+        hostInputBuffer[i] = val;
     }
+    
+    
+    for (unsigned int i = 0; i < (16*17); i++) {
+        hostInputBuffer[i] = __float2half(1.0f);
+    }
+
+    // Input 2 * 256 * 1 * 16
+    // How is this strided?
+    // It looks like it is grouped by 16*16?
+
+    // hostInputBuffer[0] = __float2half(1.0f);
+    // hostInputBuffer[16] = __float2half(1.0f);
+    // hostInputBuffer[32] = __float2half(2.0f);
+
+    // time 2
+    // hostInputBuffer[256*16] = __float2half(1.0f);
+    // hostInputBuffer[256*16 + 16] = __float2half(1.0f);
+    // hostInputBuffer[256*16 + 32] = __float2half(2.0f);
+
 
     memset(hostOutputBuffer, 0, outputTensorDesc[0].size);
 
@@ -244,17 +262,16 @@ int main() {
         return -1;
     }
     
-    __half* castBuffer = (__half*) hostOutputBuffer;
 
-    // // Check output data
-    // for (unsigned int i = 0; i < outputTensorDesc[0].size/2; i++) {
-    //     __half val = castBuffer[i];
-    //     float floatVal = __half2float(val);
-    //     if (floatVal > 0.0f) {
-    //         printf("%f ", floatVal);
-    //     }
-    // }
-    // cout << endl;
+    // Check output data
+    for (unsigned int i = 0; i < outputTensorDesc[0].size/2; i++) {
+        __half val = hostOutputBuffer[i];
+        float floatVal = __half2float(val);
+        if (floatVal != 0.0f) {
+            printf("%f ", floatVal);
+        }
+    }
+    cout << endl;
 
     // Unregister DLA buffers
     dlaStatus = cudlaMemUnregister(devHandle, inputBufferDLA);

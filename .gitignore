@@ -7,3 +7,5 @@
 example.jpg
 polyphase-filter-bank-generator
 *.bin
+__pycache__/
+runtime/model

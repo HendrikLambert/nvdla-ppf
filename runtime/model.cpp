@@ -246,15 +246,15 @@ int main() {
     
     __half* castBuffer = (__half*) hostOutputBuffer;
 
-    // Check output data
-    for (unsigned int i = 0; i < outputTensorDesc[0].size/2; i++) {
-        __half val = castBuffer[i];
-        float floatVal = __half2float(val);
-        if (floatVal > 0.0f) {
-            printf("%f ", floatVal);
-        }
-    }
-    cout << endl;
+    // // Check output data
+    // for (unsigned int i = 0; i < outputTensorDesc[0].size/2; i++) {
+    //     __half val = castBuffer[i];
+    //     float floatVal = __half2float(val);
+    //     if (floatVal > 0.0f) {
+    //         printf("%f ", floatVal);
+    //     }
+    // }
+    // cout << endl;
 
     // Unregister DLA buffers
     dlaStatus = cudlaMemUnregister(devHandle, inputBufferDLA);

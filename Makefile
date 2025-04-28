@@ -20,3 +20,6 @@ clean:
 
 print_loadable:
 	 python3 lb_reveng/lb_helper.py --loadable pytorch_model/loadable.bin
+
+reference-model:
+	cd reference/polyphase-filter-bank-generator && make

@@ -9,3 +9,4 @@ polyphase-filter-bank-generator
 *.bin
 __pycache__/
 runtime/model
+venv/

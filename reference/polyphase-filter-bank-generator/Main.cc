@@ -7,48 +7,89 @@
 
 using namespace std;
 
+enum class Mode : uint16_t
+{
+  NONE = 0,
+  PRINT_WEIGHTS = 1 << 0,
+  REVERSED_WEIGHTS = 1 << 1,
+  TEST_FILTER = 1 << 2,
+};
 
-int main (int argc, char *argv[])
+bool isFlagSet(Mode mode, Mode flag)
+{
+  return (static_cast<uint16_t>(mode) & static_cast<uint16_t>(flag)) == static_cast<uint16_t>(flag);
+}
+
+int main(int argc, char *argv[])
 {
   unsigned channels = 4;
   unsigned taps = 256;
   unsigned nrSamplesPerIntegration = 64;
+  Mode mode = Mode::NONE;
 
   WindowType window = KAISER;
-  
-  if(argc == 1) {
+
+  if (argc == 1)
+  {
     ; // use default settings
-  } else if(argc != 4) {
-    cerr << "Usage: " << argv[0] << " [nrChannels] [nrTaps] [windowType]" << endl;
+  }
+  else if (argc != 5)
+  {
+    cerr << "Usage: " << argv[0] << " [nrChannels] [nrTaps] [windowType] [options]" << endl;
     cerr << "       where windowType is one of HAMMING, BLACKMAN, GAUSSIAN, KAISER" << endl;
     return -1;
-  } else {
+  }
+  else
+  {
     channels = atoi(argv[1]);
     taps = atoi(argv[2]);
     window = FilterBank::getWindowTypeFromString(argv[3]);
+    mode = static_cast<Mode>(atoi(argv[4]));
 
-    if(window == ERROR) {
+    if (window == ERROR)
+    {
       cerr << "WindowType should be one of HAMMING, BLACKMAN, GAUSSIAN, KAISER" << endl;
       return -1;
     }
   }
 
   FilterBank fb = FilterBank(false, channels, taps, window);
-  fb.printWeights();
-  fb.reverseTaps();
 
-  FIR fir(taps, false);
-  fir.setWeights(fb.getWeights(0));
-  
-  fcomplex sample = fir.processNextSample(fcomplex(1,0));
-  cerr  << sample.real() << endl;
-
-  for (int i = 1; i < taps; i++)
+  if (isFlagSet(mode, Mode::REVERSED_WEIGHTS))
   {
-    sample = fir.processNextSample(fcomplex(0,0));
-    cerr  << sample.real() << endl;
+    fb.reverseTaps();
   }
-  
+
+  if (isFlagSet(mode, Mode::PRINT_WEIGHTS))
+  {
+    fb.printWeights();
+    // cout << "Printing weights" << endl;
+  }
+
+  if (isFlagSet(mode, Mode::TEST_FILTER))
+  {
+    // cout << "Testing filter with " << taps << " taps" << endl;
+    // Test the filter
+    FIR fir(taps, false);
+    fir.setWeights(fb.getWeights(0));
+
+    for (int i = 1; i < taps; i++)
+    {
+      fir.processNextSample(fcomplex(0, 0));
+      // cout << sample.real() << endl;
+    }
+
+    fcomplex sample = fir.processNextSample(fcomplex(1, 0));
+    cout << sample.real() << endl;
+
+    for (int i = 1; i < taps; i++)
+    {
+      sample = fir.processNextSample(fcomplex(0, 0));
+      cout << sample.real() << endl;
+    }
+
+    return 0;
+  }
 
 #if 0
   // Do some filtering

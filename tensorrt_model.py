@@ -26,7 +26,8 @@ def main():
     # Specify input
     input_tensor = network.add_input(Settings.INPUT_NAME, trt.DataType.HALF, shape=trt.Dims(Settings.INPUT_SHAPE))
     weight_tensor = network.add_input(Settings.WEIGHTS_NAME, trt.DataType.HALF, shape=trt.Dims(Settings.WEIGHTS_SHAPE))
-    # input_tensor.allowed_formats = 1 << int(trt.TensorFormat.DLA_LINEAR)
+    input_tensor.allowed_formats = 1 << int(trt.TensorFormat.DLA_LINEAR)
+    # input_tensor.set_allowed_formats(1 << int(trt.TensorFormat.DLA_LINEAR))
     # print(input_tensor.is_shape)
     # fir_tensor = network.add_input(Settings.FIR_NAME, trt.DataType.HALF, shape=trt.Dims(Settings.FIR_SHAPE))
 
@@ -37,13 +38,17 @@ def main():
     # relu1 = network.add_activation(input=input_tensor, type=trt.ActivationType.RELU)
     
     out = fir_mul_tensor.get_output(0)
-    out.allowed_formats = (1 << int(trt.TensorFormat.DLA_LINEAR))
+    # print(fir_mul_tensor.num_outputs)
+    print(dir(network))
+    out.allowed_formats = 1 << int(trt.TensorFormat.DLA_LINEAR)
     assert out.allowed_formats == (1 << int(trt.TensorFormat.DLA_LINEAR)), "Output tensor does not have DLA_LINEAR format"
     
     
     print("formats:", fir_mul_tensor.get_output(0).allowed_formats, trt.TensorFormat.DLA_LINEAR, 1 << int(trt.TensorFormat.DLA_LINEAR), out.allowed_formats)
 
     network.mark_output(out)
+    
+    
 
 
     # Builder

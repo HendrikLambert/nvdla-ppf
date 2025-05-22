@@ -168,16 +168,24 @@ int main() {
     }
     
     
-    for (unsigned int i = 0; i < (16*17); i++) {
-        hostInputBuffer[i] = __float2half(1.0f);
-    }
+    // for (unsigned int i = 0; i < (16*17); i++) {
+    //     hostInputBuffer[i] = __float2half(1.0f);
+    // }
 
     // Input 2 * 256 * 1 * 16
     // How is this strided?
     // It looks like it is grouped by 16*16?
 
-    // hostInputBuffer[0] = __float2half(1.0f);
-    // hostInputBuffer[16] = __float2half(1.0f);
+    // Batch x channels x 1 x taps
+    // array[0] waarde 0, tap 0
+    // aaray[1] waarde 0, tap 1
+    // array[16] waarde 1, tap 0
+
+
+    hostInputBuffer[0] = __float2half(1.0f);
+    hostInputBuffer[1] = __float2half(2.0f);
+    // hostInputBuffer[3] = __float2half(1.0f);
+    // hostInputBuffer[16] = __float2half(2.0f);
     // hostInputBuffer[32] = __float2half(2.0f);
 
     // time 2
@@ -265,11 +273,12 @@ int main() {
 
     // Check output data
     for (unsigned int i = 0; i < outputTensorDesc[0].size/2; i++) {
+    // for (unsigned int i = 0; i < 1024; i++) {
         __half val = hostOutputBuffer[i];
         float floatVal = __half2float(val);
-        if (floatVal != 0.0f) {
-            printf("%f ", floatVal);
-        }
+        // if (floatVal != 0.0f) {
+            printf("%.10f", floatVal);
+        // }
     }
     cout << endl;
 

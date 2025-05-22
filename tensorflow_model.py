@@ -5,7 +5,7 @@ import tf2onnx
 class PPFModel(tf.keras.Model):
     def __init__(self):
         super(PPFModel, self).__init__()
-        self.cnn = tf.keras.layers.Conv3D(filters=10, kernel_size=(1, 16, 32))
+        self.cnn = tf.keras.layers.Conv2D(filters=1, kernel_size=(16, 1))
         # self.cnn.wei
         # print(self.cnn.weights[0].shape)
 
@@ -20,7 +20,7 @@ def main():
     out = ppf_model(example_inputs)
 
     # Convert to ONNX
-    spec = (tf.TensorSpec((None, 16, 32, 1), tf.float32, name="input"),)
+    spec = (tf.TensorSpec((1, 16, 32, 1), tf.float32, name="input"),)
     output_path = "ppf.onnx"
     model_proto, _ = tf2onnx.convert.from_function(ppf_model.call, input_signature=spec, output_path=output_path)
     

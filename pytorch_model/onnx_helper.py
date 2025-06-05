@@ -1,125 +1,29 @@
 import torch
-import torch.nn as nn
-import matplotlib.pyplot as plt
-import subprocess
-import scipy.signal as signal
 import onnx
 from onnx import numpy_helper, helper
-import numpy as np
 
-from models.fir_model import FIRModel
-from models.dft_cnn_model import DFTModelCNN
-from models.dft_linear_model import DFTModelLinear
-from models.fft_cnn_model import FFTModelCNN
-from models.dft_helper import create_dft_matrix
+from models.pfb_fft_model import PFBModel
 
 
-def test_fir_filter():
-    P = 6  # channels out
-    M = 4  # taps
-    ref_weights = ref_kaiser_weights(P, M, reversed=False)
-
-    # print(ref_weights)
-    # print(ref_weights[0, :, :, :])
-
-    ppf_model = FIRModel(P, M, ref_weights)
-
-    example_inputs = torch.zeros(2, P, 1, M)
-    example_inputs[:, 0, 0, 3] = 1.0
-
-    out = ppf_model(example_inputs)
-    # # print(out[0, -1, 0, 0].item())
-    print(out)
-
-
-def test_local_ppf():
-    P = 256
-    M = 16
-    batch_size = 2
-    ref_weights = ref_kaiser_weights(P, M, reversed=True)
-    ppf_model = PPFModel(P, M, batch_size, ref_weights)
-
-    example_inputs = torch.zeros(batch_size, 256, 1, 16)
+def export_model(model: PFBModel, batch_size: int, onnx_file: str):
+    example_inputs = torch.zeros(batch_size, 2 * model.P, 1, model.M)
     example_inputs[0, 0, 0, 0] = 1.0
-    # example_inputs[0, 0, 0, 0] = 1.0
-    # example_inputs[0, 0, 0, 0] = 2.0
+    example_inputs[0, 0, 0, 1] = 2.0
 
-    out = ppf_model(example_inputs)
-
-    out = LocalFFTModel(P)(out)
-
-    print(out)
-
-
-def test_dft():
-    batch_size = 1
-    P = 256
-    cnnDFT = DFTModelCNN(P)
-    cnnFFT = FFTModelCNN(P)
-
-    # [Re(x0), Im(x0), Re(x1), Im(x1), ..., Re(xn-1), Im(xn-1)]
-    example_input = torch.zeros(batch_size, 2 * P, 1, 1)
-    # example_input[0, 0] = 1.0
-    example_input[0, 0] = 1.0
-    example_input[0, 2] = 2.0
-    # example_input[1, 1] = 1.0
-    # example_input[1, 2] = 2.0
-
-    dftOut = cnnDFT(example_input).squeeze()
-    fftOut = cnnFFT(example_input).squeeze()
-
-    print("DFT output shape:", dftOut.shape)
-    print("FFT output shape:", fftOut.shape)
-    print("DFT output:", dftOut)
-    print("FFT output:", fftOut)
-    
-    print(torch.allclose(dftOut, fftOut, rtol=1e-5))
-
-
-def export_model():
-    batch_size = 1
-    P = 256
-    M = 16
-    # ref_weights = torch.zeros(P*2, 1, 1, M)
-    ref_weights = ref_kaiser_weights(P, M, reversed=False)
-    # ref_weights2 = ref_weights.unsqueeze(1)
-
-    # Weights twice for Re and Im
-    weights = [ref_weights[i // 2] for i in range(0, 2 * P)]
-    weights = torch.stack(weights, dim=0)
-
-    # lppf_model = LocalPPFModel(P, M, ref_weights)
-    ppf_model = PPFModel(P, M, batch_size, weights)
-
-    example_inputs = torch.zeros(batch_size, 2 * P, 1, M)
-    example_inputs[0, 0, 0, 0] = 1.0
-    example_inputs[0, 1, 0, 0] = 2.0
-    # example_inputs[0, 0, 0, 1] = 1.0
-
-    # # lout = lppf_model(example_inputs)
-    out = ppf_model(example_inputs)
-    # # print(out[0, 0, 0, 0].item())
-    # # print(lout)
-    print(out)
-
-    # # print
-    ONNX_FILE = "ppf.onnx"
+    # Export the model to ONNX format
     torch.onnx.export(
-        ppf_model,
+        model,
         example_inputs,
-        ONNX_FILE,
+        onnx_file,
         input_names=["input"],
         output_names=["output"],
         do_constant_folding=True,
-        opset_version=15,
+        opset_version=9,
         #   dynamic_axes={
         #     'input': {0: 'batch_size'},
         #     'output': {0: 'batch_size'}
         #   }
     )
-
-    # Post processing
-    # post_process_onnx(ONNX_FILE)
 
 
 def extract_constant_value(node):
@@ -210,13 +114,3 @@ def post_process_onnx(onnx_file: str):
     model = convert_slice_to_opset1(model)
 
     onnx.save(model, onnx_file)
-
-
-def main():
-    # export_model()
-    # post_process_onnx("ppf.onnx")
-    test_dft()
-
-
-if __name__ == "__main__":
-    main()

@@ -1,10 +1,10 @@
 import torch.nn as nn
 
 
-class PFBModel(nn.Module):
+class PFBModule(nn.Module):
     def __init__(self, P: int, M: int, batch_size: int):
         """
-        Initializes the PFBModel.
+        Initializes the PFBModule.
         Args:
             P (int): Number of channels.
             M (int): Number of taps for the FIR filter.

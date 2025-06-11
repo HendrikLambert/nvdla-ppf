@@ -3,10 +3,10 @@ import torch.nn as nn
 from dft_helper import create_dft_matrix
 
 
-class DFTModelLinear(nn.Module):
+class DFTLinearModule(nn.Module):
     def __init__(self, P: int):
         """
-        Initializes the DFTModelLinear.
+        Initializes the DFTLinearModule.
 
         Args:
             P (int): Number of channels. Must be a positive integer.

@@ -1,24 +1,22 @@
 import torch
 import onnx
 from onnx import numpy_helper, helper
+from modules.pfb_module import PFBModule
 
-from models.pfb_fft_model import PFBModel
-
-
-def export_model(model: PFBModel, batch_size: int, onnx_file: str):
-    example_inputs = torch.zeros(batch_size, 2 * model.P, 1, model.M)
+def export_model(model: PFBModule, onnx_file: str, onnx_version: int = 17):
+    example_inputs = torch.zeros(model.batch_size, 2 * model.P, 1, model.M)
     example_inputs[0, 0, 0, 0] = 1.0
-    example_inputs[0, 0, 0, 1] = 2.0
+    # example_inputs[0, 0, 0, 1] = 2.0
 
     # Export the model to ONNX format
     torch.onnx.export(
         model,
         example_inputs,
-        onnx_file,
+        onnx_file + f"-{model.P}-{model.M}-{model.batch_size}.onnx",
         input_names=["input"],
         output_names=["output"],
         do_constant_folding=True,
-        opset_version=9,
+        opset_version=onnx_version,
         #   dynamic_axes={
         #     'input': {0: 'batch_size'},
         #     'output': {0: 'batch_size'}

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class FIRModel(nn.Module):
+class FIRCNNModule(nn.Module):
     def __init__(self, P, M, fir_weights: torch.Tensor):
         """
         

@@ -1,3 +1,7 @@
+# The model requires TensorRT >10.7 for the concatination layer to work properly/
+TENSORRT := $(HOME)/TensorRT-10.7.0.23
+TRTEXEC := $(TENSORRT)/bin/trtexec
+export LD_LIBRARY_PATH=$(TENSORRT)/lib:$LD_LIBRARY_PATH
 
 tensorflow:
 	python3 tensorflow_model.py
@@ -6,9 +10,9 @@ run_pytorch:
 	cd pytorch_model && python3 main.py
 
 compile_pytorch:
-	# cd pytorch_model && /usr/src/tensorrt/bin/trtexec --onnx=test_module.onnx --verbose --fp16 --saveEngine=loadable.bin --inputIOFormats=fp16:chw16 --outputIOFormats=fp16:chw16 --buildDLAStandalone --useDLACore=0
-	# cd pytorch_model && /usr/src/tensorrt/bin/trtexec --onnx=pfb_model_dft.onnx --verbose --fp16 --saveEngine=loadable.bin --inputIOFormats=fp16:chw16 --outputIOFormats=fp16:chw16 --buildDLAStandalone --useDLACore=0
-	cd pytorch_model && /usr/src/tensorrt/bin/trtexec --onnx=$(file) --verbose --fp16 --saveEngine=loadable.bin --inputIOFormats=fp16:chw16 --outputIOFormats=fp16:chw16 --buildDLAStandalone --useDLACore=0
+	# cd pytorch_model && $(TRTEXEC) --onnx=test_module.onnx --verbose --fp16 --saveEngine=loadable.bin --inputIOFormats=fp16:chw16 --outputIOFormats=fp16:chw16 --buildDLAStandalone --useDLACore=0
+	# cd pytorch_model && $(TRTEXEC) --onnx=pfb_model_dft.onnx --verbose --fp16 --saveEngine=loadable.bin --inputIOFormats=fp16:chw16 --outputIOFormats=fp16:chw16 --buildDLAStandalone --useDLACore=0
+	cd pytorch_model && $(TRTEXEC) --onnx=$(file) --verbose --fp16 --saveEngine=loadable.bin --inputIOFormats=fp16:chw16 --outputIOFormats=fp16:chw16 --buildDLAStandalone --useDLACore=0
 
 test_pytorch:
 	cd pytorch_model && python3 -m unittest discover -s tests

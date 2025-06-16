@@ -8,7 +8,7 @@ from modules.test_module import TestModule
 def export_pfb_fft():
     P = 32  # Number of channels
     M = 16   # Number of taps
-    batch_size = 1
+    batch_size = 4
 
     # Initialize the PFB model with FFT
     # pfb_model = PFBModelDFT(P, M, batch_size)

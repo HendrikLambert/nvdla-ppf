@@ -23,28 +23,27 @@ class TestFFTCNNModule(unittest.TestCase):
             len(input_tensor.shape), 4, "Input tensor must have 4 dimensions"
         )
         batch_size, num_features, H, W = input_tensor.shape
-        N = num_features // 2
 
         # Reshape and combine interleaved channels into a complex tensor
-        # Input shape: (B, 2*N, 1, 1) -> Squeezed: (B, 2*N)
+        # Get correct shape (B, 2*N, 1, 1) -> (B, 2*N)
         input_squeezed = input_tensor.squeeze(-1).squeeze(-1)
-        # Real parts: (B, N), Imaginary parts: (B, N)
+        # Get real and imaginary parts
         re_part = input_squeezed[:, 0::2]
         im_part = input_squeezed[:, 1::2]
-        # Complex tensor: (B, N)
+        
         input_complex = torch.complex(re_part, im_part)
 
-        # Compute the reference FFT
+        # Compute the reference DFT
         output_complex = torch.fft.fft(input_complex, dim=1)
 
         # Split the complex output back into interleaved real/imaginary channels
-        # Shape of real/imag parts: (B, N)
+        # Shape of real,imag parts (B, N)
         out_re = output_complex.real
         out_im = output_complex.imag
         # Stack to (B, N, 2) and flatten to (B, 2*N) to interleave
         output_interleaved = torch.stack((out_re, out_im), dim=2).flatten(start_dim=1)
 
-        # Reshape to match the original 4D shape: (B, 2*N, 1, 1)
+        # Reshape to match the original shape (B, 2*N, 1, 1)
         return output_interleaved.view(batch_size, num_features, H, W)
 
     def _run_correctness_test(self, N: int, batch_size: int):
@@ -52,17 +51,13 @@ class TestFFTCNNModule(unittest.TestCase):
         A generic test function that creates a model for a given N,
         runs a forward pass, and compares it to the reference FFT.
         """
-        # 1. Setup: Create model and random input data
         model = FFTCNNModule(N=N)
+        
         input_tensor = torch.randn(batch_size, 2 * N, 1, 1)
 
-        # 2. Act: Run the forward pass through the custom module
         output_model = model(input_tensor)
-
-        # 3. Reference: Compute the ground truth using torch.fft
         output_ref = self._get_fft_reference(input_tensor)
 
-        # 4. Assert: Check that shapes match and values are numerically close
         self.assertEqual(output_model.shape, input_tensor.shape)
         self.assertTrue(
             torch.allclose(output_model, output_ref, atol=1e-5),

@@ -130,7 +130,7 @@ class FFTCNNModule(nn.Module):
         Creates permutation indices for the initial bit-reversal of complex pairs.
         Returns a permutation map of size N.
         """
-        perm_indices = np.empty(self.N, dtype=int)
+        perm_indices = np.zeros(self.N, dtype=int)
         num_bits = int(np.log2(self.N))
 
         # Iterate through each target complex pair index
@@ -152,12 +152,12 @@ class FFTCNNModule(nn.Module):
         current stage's butterfly convolution.
         Returns a permutation map of size N.
         """
-        perm_indices_pairs = np.empty(self.N, dtype=int)
+        perm_indices_pairs = np.zeros(self.N, dtype=int)
 
         # Size of the DFTs computed in the PREVIOUS stage.
         prev_dft_size = 2**stage_idx
 
-        # We iterate through each of the N/2 butterfly operations in the current stage.
+        # Iterate through each of the N/2 butterfly operations in the current stage.
         # k_bf_target is the physical index of the butterfly group (which takes 2 pairs).
         for k_bf_target in range(self.N // 2):
             # Map the physical butterfly index to its logical FFT context.
@@ -204,7 +204,7 @@ class FFTCNNModule(nn.Module):
         of the final butterfly stage into natural order.
         Returns a permutation map of size N.
         """
-        perm_indices_pairs = np.empty(self.N, dtype=int)
+        perm_indices_pairs = np.zeros(self.N, dtype=int)
         num_butterflies = self.N // 2
 
         for k in range(num_butterflies):

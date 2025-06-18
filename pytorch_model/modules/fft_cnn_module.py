@@ -125,8 +125,6 @@ class FFTCNNModule(nn.Module):
         final_perm_indices = self._create_final_unscramble_indices()
         self.layers.append(ShuffleComplexPairsModule(final_perm_indices))
 
-    # In class FFTCNNModule:
-
     def _create_bit_reversal_indices(self) -> np.ndarray:
         """
         Creates permutation indices for the initial bit-reversal of complex pairs.

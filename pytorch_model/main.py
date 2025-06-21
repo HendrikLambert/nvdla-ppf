@@ -2,9 +2,10 @@ import unittest
 import argparse
 
 from model_helper import (
+    build_loadable_benchmark_files,
+    build_onnx_benchmark_files,
     export_onnx_model,
     build_loadable_from_onnx,
-    generate_benchmark_onnx,
 )
 
 
@@ -147,12 +148,31 @@ def subroutine_build_benchmark():
     parser.add_argument(
         "--nvdla_folder", "-n", type=str, help="Folder to save the NVDLA loadables."
     )
+    # TRTEXEC location
+    parser.add_argument(
+        "--trtexec_location",
+        "-trt",
+        type=str,
+        default="/usr/src/tensorrt/bin/trtexec",
+        help="Location of the trtexec binary.",
+    )
 
     args, _ = parser.parse_known_args()
 
     # Switch between ONNX and NVDLA loadable generation
     if args.type == "onnx":
-        generate_benchmark_onnx(args.onnx_folder)
+        build_onnx_benchmark_files(args.onnx_folder)
+    elif args.type == "nvdla":
+        if not args.nvdla_folder:
+            raise ValueError(
+                "NVDLA folder must be specified for NVDLA loadable generation."
+            )
+
+        build_loadable_benchmark_files(
+            onnx_dir=args.onnx_folder,
+            nvdla_dir=args.nvdla_folder,
+            trtexe_location=args.trtexec_location,
+        )
 
 
 def main():

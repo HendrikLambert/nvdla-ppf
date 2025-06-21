@@ -3,6 +3,15 @@ TENSORRT := $(HOME)/TensorRT-10.7.0.23
 TRTEXEC := $(TENSORRT)/bin/trtexec
 export LD_LIBRARY_PATH=$(TENSORRT)/lib:$LD_LIBRARY_PATH
 
+# For scatch location
+USER := $(shell whoami)
+
+create_onnx_benchmarkfiles:
+	cd pytorch_model && python3 main.py --test --benchmark --type onnx --onnx_folder /var/scratch/$(USER)/$(onnx_dir)
+
+create_nvdla_benchmarkfiles:
+	cd pytorch_model && python3 main.py --benchmark --type nvdla --onnx_folder /var/scratch/$(USER)/$(onnx_dir) --nvdla_folder /var/scratch/$(USER)/$(nvdla_dir) --trtexec_location $(TRTEXEC) 
+
 run_pytorch:
 	cd pytorch_model && python3 main.py
 

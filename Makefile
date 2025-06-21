@@ -3,9 +3,6 @@ TENSORRT := $(HOME)/TensorRT-10.7.0.23
 TRTEXEC := $(TENSORRT)/bin/trtexec
 export LD_LIBRARY_PATH=$(TENSORRT)/lib:$LD_LIBRARY_PATH
 
-tensorflow:
-	python3 tensorflow_model.py
-
 run_pytorch:
 	cd pytorch_model && python3 main.py
 
@@ -14,9 +11,6 @@ compile_pytorch:
 
 test_pytorch:
 	cd pytorch_model && python3 -m unittest discover -s tests
-
-tensorrt:
-	python3 tensorrt_model.py
 
 model: 
 	cd runtime && make model
@@ -29,7 +23,7 @@ clean:
 	cd runtime && make clean
 
 print_loadable:
-	 python3 lb_reveng/lb_helper.py --loadable pytorch_model/loadable.bin
+	 python3 lb_reveng/lb_helper.py --loadable $(file)
 
 reference-model:
 	cd reference/polyphase-filter-bank-generator && make

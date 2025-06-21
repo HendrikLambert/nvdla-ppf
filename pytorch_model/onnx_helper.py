@@ -12,7 +12,7 @@ def export_model(model: PFBModule, onnx_file: str, onnx_version: int = 17):
     torch.onnx.export(
         model,
         example_inputs,
-        onnx_file + f"-{model.P}-{model.M}-{model.batch_size}.onnx",
+        onnx_file,
         input_names=["input"],
         output_names=["output"],
         do_constant_folding=True,

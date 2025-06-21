@@ -20,6 +20,8 @@ class PFBFFTModule(PFBModule):
 
         # Initialize FIR filter with predefined weights
         weights = ref_kaiser_weights(P, M, reversed=False)
+        # Duplicate weights for complex channels, both channels have the same FIR filter
+        # so we can duplicate the weights for both real and imaginary parts.
         weights = [weights[i // 2] for i in range(0, 2 * P)]
         weights = torch.stack(weights, dim=0)
 

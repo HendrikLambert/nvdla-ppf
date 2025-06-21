@@ -11,19 +11,16 @@ import numpy as np
 
 class ShuffleComplexPairsModule(nn.Module):
     """
-    Shuffles pairs of channels (representing complex numbers) of an input
-    tensor. It uses torch.split to get blocks of 2 channels, reorders them,
-    and then uses torch.cat. This is much more efficient than splitting
-    every individual channel.
+    Shuffles pairs of channels (representing complex numbers) of an input tensor. It uses torch.split to get blocks of 2 channels,
+    reorders them, and then uses torch.cat. This is much more efficient than splitting every individual channel.
     """
 
     def __init__(self, pair_permutation_indices: np.ndarray):
         """
         Args:
-            pair_permutation_indices (np.ndarray): A 1D array of ints of size N.
-                `pair_permutation_indices[k]` specifies the source *pair* index
-                in the input tensor that should become the k-th *pair* in the
-                output tensor.
+            pair_permutation_indices (np.ndarray): A 1D array of ints of size N. 
+                `pair_permutation_indices[k]` specifies the source *pair* index in the input tensor that should become
+                the k-th *pair* in the output tensor.
         """
         super().__init__()
 
@@ -32,15 +29,6 @@ class ShuffleComplexPairsModule(nn.Module):
         self.num_channels = self.num_pairs * 2
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if x.shape[1] != self.num_channels:
-            raise ValueError(
-                f"Input tensor has {x.shape[1]} channels, but this shuffler "
-                f"was initialized for {self.num_channels} channels ({self.num_pairs} pairs)."
-            )
-
-        if self.num_pairs == 0:
-            return x
-
         # Split the input tensor into pairs of channels (complex numbers)
         # Each element will have shape (B, 2, H, W).
         input_pair_slices = list(torch.split(x, 2, dim=1))
@@ -56,15 +44,13 @@ class ShuffleComplexPairsModule(nn.Module):
 
 class FFTCNNModule(nn.Module):
     """
-    FFTCNNModule implements a Fast Fourier Transform (FFT) using a convolutional
-    neural network (CNN) architecture. It uses grouped 1x1 convolutions to
-    perform butterfly operations, and it applies a series of permutations
-    to rearrange the input and output channels according to the Cooley-Tukey
-    algorithm.
+    FFTCNNModule implements a Fast Fourier Transform (FFT) using a convolutional neural network (CNN) architecture.
+    It uses grouped 1x1 convolutions to perform butterfly operations,  and it applies a series of permutations to rearrange
+    the input and output channels according to the Cooley-Tukey  algorithm.
 
     The module is designed to compute the FFT of a complex input tensor.
     It expexts the numbers to be interleaved like [Re(X_0), Im(X_0), Re(X_1), Im(X_1), ...]
-    It also expects the input tensor to have a shape of (B, 2*N, 1, 1), with N the amount of complex points.
+    It also expecs the input tensor to have a shape of (B, 2*N, 1, 1), with N the amount of complex points.
     """
 
     def __init__(self, N: int):
@@ -148,8 +134,7 @@ class FFTCNNModule(nn.Module):
 
     def _create_inter_stage_indices(self, stage_idx: int) -> np.ndarray:
         """
-        Creates permutation indices for complex pairs to wire inputs for the
-        current stage's butterfly convolution.
+        Creates permutation indices for complex pairs to wire inputs for the current stage's butterfly convolution.
         Returns a permutation map of size N.
         """
         perm_indices_pairs = np.zeros(self.N, dtype=int)
@@ -200,8 +185,7 @@ class FFTCNNModule(nn.Module):
 
     def _create_final_unscramble_indices(self) -> np.ndarray:
         """
-        Creates permutation indices for complex pairs to unscramble the output
-        of the final butterfly stage into natural order.
+        Creates permutation indices for complex pairs to unscramble the output of the final butterfly stage into natural order.
         Returns a permutation map of size N.
         """
         perm_indices_pairs = np.zeros(self.N, dtype=int)
@@ -222,8 +206,7 @@ class FFTCNNModule(nn.Module):
 
     def _create_butterfly_weights(self, stage_idx: int) -> torch.Tensor:
         """
-        Creates the weights for the grouped 1x1 convolution that performs the
-        butterfly operations for a given FFT stage.
+        Creates the weights for the grouped 1x1 convolution that performs the butterfly operations for a given FFT stage.
         """
         # N_b is the size of the DFTs being computed at this stage.
         N_b = 2 ** (stage_idx + 1)

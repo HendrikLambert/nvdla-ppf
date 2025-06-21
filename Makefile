@@ -24,6 +24,9 @@ test_pytorch:
 model: 
 	cd runtime && make model
 
+build_benchmark:
+	cd runtime && make benchmark
+
 clean:
 	# cd pytorch_model && make clean
 	cd pytorch_model && rm *.dla || echo "no *.dla files to remove"

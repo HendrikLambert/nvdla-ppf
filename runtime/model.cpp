@@ -19,7 +19,7 @@ using namespace std;
 
 int main() {
     // Load loadable
-    const char *loadableFile = "pytorch_model/loadable.bin";
+    const char *loadableFile = "pfb_model_dft-c256-t16-b1.nvdla";
     unsigned char *loadableData = NULL;
 
     FILE *fp = NULL;

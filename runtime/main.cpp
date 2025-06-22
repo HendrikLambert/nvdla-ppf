@@ -1,11 +1,11 @@
-#include "benchmark.h"
+#include "benchmark.hpp"
 #include <iostream>
 
 using namespace std;
 
 int main() {
     // Initialize the benchmark
-    Benchmark benchmark;
+    Benchmark benchmark("/dev/ttyACM0");
     if (!benchmark.init()) {
         cerr << "Failed to initialize benchmark." << endl;
         return -1;
@@ -16,5 +16,9 @@ int main() {
     benchmark.load_files(dir);
 
     cout << "Benchmark initialized and files loaded successfully." << endl;
+
+    benchmark.run();
+
+
     return 0;
 }

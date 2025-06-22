@@ -1,26 +1,29 @@
 CC = g++
 
-CompileParms = -c -Wall -Wextra -Wpedantic -std=c++17 -O2 -I/usr/local/cuda/include
-LinkerParms = -L/usr/local/cuda-12.6/targets/aarch64-linux/lib/ -lcudla -lcuda -lcudart
+# Power Sensor path
+ps3 := $(HOME)/ps3
 
-OBJS = main.o loadable.o benchmark.o cudla_dev.o cudla_runtime.o
+CompileParms = -c -Wall -Wextra -Wpedantic -std=c++17 -O2 -I/usr/local/cuda/include -I$(ps3)/include
+LinkerParms = -L/usr/local/cuda-12.6/targets/aarch64-linux/lib/ -lcudla -lcuda -lcudart -L$(ps3)/lib -lPowerSensor
+
+OBJS = main.o loadable.o benchmark.o cudla_runtime.o
 
 model.o: model.cpp
 	$(CC) $(CompileParms) model.cpp
 
-loadable.o: loadable.cpp loadable.h
+model: model.o
+	$(CC) model.o $(LinkerParms) -o model
+
+loadable.o: loadable.cpp loadable.hpp
 	$(CC) $(CompileParms) loadable.cpp
 
-benchmark.o: benchmark.cpp benchmark.h
+benchmark.o: benchmark.cpp benchmark.hpp
 	$(CC) $(CompileParms) benchmark.cpp
 
-cudla_dev.o: cudla_dev.cpp cudla_dev.h
-	$(CC) $(CompileParms) cudla_dev.cpp
-
-cudla_runtime.o: cudla_runtime.cpp cudla_runtime.h
+cudla_runtime.o: cudla_runtime.cpp cudla_runtime.hpp
 	$(CC) $(CompileParms) cudla_runtime.cpp
 
-main.o: main.cpp benchmark.h
+main.o: main.cpp
 	$(CC) $(CompileParms) main.cpp
 
 benchmark: $(OBJS)

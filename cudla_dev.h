@@ -9,7 +9,7 @@ public:
      * Destructor for the CUDLADev class.
      */
     ~CUDLADev() noexcept;
-    
+
     /**
      * Initializes the CUDLA device.
      *
@@ -26,7 +26,7 @@ public:
     CUDLADev(CUDLADev&&) = delete;
     CUDLADev& operator=(CUDLADev&&) = delete;
 
-private:
+protected:
     cudlaDevHandle devHandle = nullptr;
 };
 

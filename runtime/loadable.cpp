@@ -1,11 +1,30 @@
-#include "loadable.h"
+#include "loadable.hpp"
 #include <fstream>
 #include <iostream>
 
+#include "cuda.h"
+#include "cuda_runtime.h"
+
 using namespace std;
 
-Loadable::Loadable(const string& filename) noexcept {
-    this->filename = filename;
+
+std::unique_ptr<Loadable> Loadable::create(const std::string& filename, cudlaDevHandle devHandle) {
+    auto obj = std::unique_ptr<Loadable>(new Loadable(filename, devHandle));
+
+    if (!obj->loadBinary()) {
+        return nullptr;
+    }
+
+    if (!obj->loadModule()) {
+        return nullptr;
+    }
+
+    return obj;
+}
+
+Loadable::Loadable(const string& filename, const cudlaDevHandle devHandle) noexcept
+    : filename(filename), devHandle(devHandle) {
+    cout << "loadable.cpp devHandle " << devHandle << endl; 
 }
 
 Loadable::~Loadable() noexcept {
@@ -16,33 +35,32 @@ Loadable::~Loadable() noexcept {
             cout << "cudlaModuleUnload failed: " << status << endl;
         }
     }
+
+    freeBuffers();
 }
 
 bool Loadable::loadBinary() {
-    // Load the file into memory
     ifstream file(filename, ios::binary | ios::ate);
     if (!file) {
         cout << "Unable to open file " << filename << endl;
         return false;
     }
 
-    // Get the size of the file
     fileSize = file.tellg();
     file.seekg(0, ios::beg);
     loadableData = make_unique<char[]>(fileSize);
 
-    // Read the file into loadableData. Return if failed
     if (!file.read(loadableData.get(), fileSize)) {
         cout << "Unable to read file " << filename << endl;
         return false;
     }
-    
+
     return true;
 }
 
-bool Loadable::loadModule(cudlaDevHandle const devHandle) noexcept {
-    // Load the module from memory
-    cudlaStatus status = cudlaModuleLoadFromMemory(devHandle,
+bool Loadable::loadModule() noexcept {
+    cudlaStatus status = cudlaModuleLoadFromMemory(
+        devHandle,
         reinterpret_cast<const uint8_t*>(loadableData.get()),
         fileSize,
         &moduleHandle,
@@ -53,11 +71,7 @@ bool Loadable::loadModule(cudlaDevHandle const devHandle) noexcept {
         return false;
     }
 
-    if (!loadModuleAttributes()) {
-        return false;
-    }
-
-    return true;
+    return loadModuleAttributes();
 }
 
 bool Loadable::loadModuleAttributes() noexcept {
@@ -70,6 +84,9 @@ bool Loadable::loadModuleAttributes() noexcept {
         cout << "cudlaModuleGetAttributes for input tensors failed: " << status << endl;
         return false;
     }
+    if (attribute.numInputTensors != 1) {
+        cout << "Currently only support 1 input tensor, got: " << attribute.numInputTensors  << " might not work as expected" << endl;
+    }
     inputTensorDesc.resize(attribute.numInputTensors);
 
     // Get number of output tensors
@@ -77,6 +94,9 @@ bool Loadable::loadModuleAttributes() noexcept {
     if (status != cudlaSuccess) {
         cout << "cudlaModuleGetAttributes for output tensors failed: " << status << endl;
         return false;
+    }
+    if (attribute.numOutputTensors != 1) {
+        cout << "Currently only support 1 output tensor, got: " << attribute.numOutputTensors  << " might not work as expected" << endl;
     }
     outputTensorDesc.resize(attribute.numOutputTensors);
 
@@ -99,6 +119,57 @@ bool Loadable::loadModuleAttributes() noexcept {
     return true;
 }
 
+bool Loadable::allocateBuffers(int count) noexcept {
+    // Free any previously allocated buffers
+    freeBuffers();
+
+    // Allocate the buffers 
+    for (int n = 0; n < count; n++) {
+        // For input tensors
+        for (size_t i = 0; i < inputTensorDesc.size(); i++) {
+            uint64_t size = inputTensorDesc[i].size;
+            if (!allocateSingleBuffer(size, bufferGPUInput, bufferDLAInput)) {
+                cout << "Failed to allocate input buffer for tensor " << inputTensorDesc[i].name << endl;
+                return false;
+            }
+        }
+        // For output tensors
+        for (size_t i = 0; i < outputTensorDesc.size(); i++) {
+            uint64_t size = outputTensorDesc[i].size;
+            if (!allocateSingleBuffer(size, bufferGPUOutput, bufferDLAOutput)) {
+                cout << "Failed to allocate output buffer for tensor " << outputTensorDesc[i].name << endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool Loadable::allocateSingleBuffer(uint64_t size, std::vector<void*>& gpuBuffer, std::vector<uint64_t*>& dlaBuffer) const noexcept {
+    void* gpuPtr = nullptr;
+    uint64_t* dlaPtr = nullptr;
+
+    // Allocate GPU buffer
+    cudaError_t cudaStatus = cudaMalloc(&gpuPtr, size);
+    if (cudaStatus != cudaSuccess) {
+        const char* errPtr = cudaGetErrorName(cudaStatus);
+        cout << "Error allocating GPU buffer: " << errPtr << endl;
+        return false;
+    }
+
+    // Register DLA buffer
+    cudlaStatus cudlaStatus = cudlaMemRegister(devHandle, reinterpret_cast<uint64_t*>(gpuPtr), size, &dlaPtr, 0);
+    if (cudlaStatus != cudlaSuccess) {
+        cout << "cudlaMemRegister failed: " << cudlaStatus << endl;
+        cudaFree(gpuPtr);
+        return false;
+    }
+    gpuBuffer.push_back(gpuPtr);
+    dlaBuffer.push_back(dlaPtr);
+
+    return true;
+}
+
 void Loadable::printTensorDesc() const noexcept {
     for (const auto& desc : inputTensorDesc) {
         printTensorDescHelper(desc);
@@ -108,20 +179,74 @@ void Loadable::printTensorDesc() const noexcept {
     }
 }
 
-void Loadable::printTensorDescHelper(cudlaModuleTensorDescriptor const& tensorDesc) const noexcept {
-    cout << "Tensor desc: " << endl;
-    cout << "Name: " << tensorDesc.name << endl;
-    cout << "Size: " << tensorDesc.size << endl;
-    cout << "N: " << tensorDesc.n << " C: " << tensorDesc.c << " H: " << tensorDesc.h << " W: " << tensorDesc.w << endl;
-    cout << "Data format: " << (int)tensorDesc.dataFormat << endl;
-    cout << "Data type: " << (int)tensorDesc.dataType << endl;
-    cout << "Data category: " << (int)tensorDesc.dataCategory << endl;
-    cout << "Pixel format: " << (int)tensorDesc.pixelFormat << endl;
-    cout << "Pixel mapping: " << (int)tensorDesc.pixelMapping << endl;
+bool Loadable::runTask(const cudaStream_t stream, const int buffIndex) const noexcept {
+    // Craete the task
+    cudlaTask task;
+    task.moduleHandle = moduleHandle;
+    task.numInputTensors = 1;
+    task.inputTensor = &bufferDLAInput[buffIndex];
+    task.numOutputTensors = 1;
+    task.outputTensor = &bufferDLAOutput[buffIndex];
+    task.waitEvents = NULL; 
+    task.signalEvents = NULL;
+
+    cout << "loadable.cpp devHandle " << devHandle << endl;
+
+    cudlaStatus status = cudlaSubmitTask(devHandle, &task, 1, stream, 0);
+    if (status != cudlaSuccess) {
+        cout << "cudlaSubmitTask failed: " << status << endl;
+        return false;
+    }
+
+    return true;
+}
+
+void Loadable::printTensorDescHelper(const cudlaModuleTensorDescriptor& tensorDesc) const noexcept {
+    cout << "Tensor desc: \n";
+    cout << "Name: " << tensorDesc.name << "\n";
+    cout << "Size: " << tensorDesc.size << "\n";
+    cout << "N: " << tensorDesc.n << " C: " << tensorDesc.c << " H: " << tensorDesc.h << " W: " << tensorDesc.w << "\n";
+    cout << "Data format: " << (int)tensorDesc.dataFormat << "\n";
+    cout << "Data type: " << (int)tensorDesc.dataType << "\n";
+    cout << "Data category: " << (int)tensorDesc.dataCategory << "\n";
+    cout << "Pixel format: " << (int)tensorDesc.pixelFormat << "\n";
+    cout << "Pixel mapping: " << (int)tensorDesc.pixelMapping << "\n";
     cout << "Stride: ";
     for (unsigned int i = 0; i < CUDLA_LOADABLE_TENSOR_DESC_NUM_STRIDES; i++) {
         cout << tensorDesc.stride[i] << " ";
     }
-    cout << endl << endl;
+    cout << "\n\n";
 }
 
+void Loadable::freeBuffers() noexcept {
+    for (auto& buffer : bufferGPUInput) {
+        if (buffer) {
+            cudaFree(buffer);
+            buffer = nullptr;
+        }
+    }
+    for (auto& buffer : bufferGPUOutput) {
+        if (buffer) {
+            cudaFree(buffer);
+            buffer = nullptr;
+        }
+    }
+
+    for (auto& buffer : bufferDLAInput) {
+        if (buffer) {
+            cudlaMemUnregister(devHandle, buffer);
+            buffer = nullptr;
+        }
+    }
+    for (auto& buffer : bufferDLAOutput) {
+        if (buffer) {
+            cudlaMemUnregister(devHandle, buffer);
+            buffer = nullptr;
+        }
+    }
+
+    bufferGPUInput.clear();
+    bufferGPUOutput.clear();
+    bufferDLAInput.clear();
+    bufferDLAOutput.clear();
+}

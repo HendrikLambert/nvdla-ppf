@@ -12,4 +12,5 @@ polyphase-filter-bank-generator
 *.csv
 __pycache__/
 runtime/model
+runtime/benchmark
 venv/

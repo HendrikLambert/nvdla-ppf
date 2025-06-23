@@ -31,4 +31,5 @@ benchmark: $(OBJS)
 
 clean:
 	rm benchmark || echo "No benchmark to remove"
+	rm model || echo "No model to remove"
 	rm *.o || echo "No object files to remove"

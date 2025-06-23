@@ -6,7 +6,7 @@
 
 using namespace std;
 
-std::shared_ptr<CUDLARuntime> CUDLARuntime::create(const int deviceId) noexcept {
+std::shared_ptr<CUDLARuntime> CUDLARuntime::create() noexcept {
     auto obj = std::shared_ptr<CUDLARuntime>(new CUDLARuntime());
 
     cudaError_t cudaStatus = cudaStreamCreateWithFlags(&obj->stream, cudaStreamNonBlocking);
@@ -15,14 +15,6 @@ std::shared_ptr<CUDLARuntime> CUDLARuntime::create(const int deviceId) noexcept 
         cout << "Error in creating cuda stream: " << errPtr << endl;
         return nullptr;
     }
-    cout << "devHandle: " << obj->devHandle << endl;
-    // Initialize CUDLA device
-    cudlaStatus status = cudlaCreateDevice(deviceId, &obj->devHandle, CUDLA_CUDA_DLA);
-    if (status != cudlaSuccess) {
-        cout << "cudlaCreateDevice failed for device: " << deviceId << " with error: " << status << endl;
-        return nullptr;
-    }
-    cout << "devHandle: " << obj->devHandle << endl;
 
     return obj;
 }
@@ -31,10 +23,7 @@ CUDLARuntime::CUDLARuntime() noexcept {
 
 }
 
-
 CUDLARuntime::~CUDLARuntime() noexcept {
-    cout << "CUDLARuntime destructor called." << endl;
-    cout << "runtime devHandle: " << devHandle << endl;
     // Destroy CUDA stream
     if (stream) {
         cudaError_t cudaStatus = cudaStreamDestroy(stream);
@@ -44,18 +33,9 @@ CUDLARuntime::~CUDLARuntime() noexcept {
         }
     }
 
-    // Destroy CUDLA device
-    if (devHandle) {
-        cudlaStatus status = cudlaDestroyDevice(devHandle);
-        if (status != cudlaSuccess) {
-            cout << "cudlaDestroyDevice failed: " << status << endl;
-        }
-    }
-
 }
 
 bool CUDLARuntime::initializeCuda(const int deviceId) noexcept {
-    cout << "Initializing CUDA for device ID: " << deviceId << endl;
     // Initialize CUDA
 
     // Set the CUDA device
@@ -74,10 +54,6 @@ bool CUDLARuntime::initializeCuda(const int deviceId) noexcept {
     }
 
     return true;
-}
-
-cudlaDevHandle CUDLARuntime::getDevice() const noexcept {
-    return devHandle;
 }
 
 cudaStream_t CUDLARuntime::getStream() const noexcept {

@@ -8,10 +8,14 @@
 using namespace std;
 
 
-std::unique_ptr<Loadable> Loadable::create(const std::string& filename, cudlaDevHandle devHandle) {
-    auto obj = std::unique_ptr<Loadable>(new Loadable(filename, devHandle));
+std::unique_ptr<Loadable> Loadable::create(const std::string& filename, const uint64_t dlaId) {
+    auto obj = std::unique_ptr<Loadable>(new Loadable(filename));
 
     if (!obj->loadBinary()) {
+        return nullptr;
+    }
+
+    if (!obj->createDevHandle(dlaId)) {
         return nullptr;
     }
 
@@ -19,15 +23,21 @@ std::unique_ptr<Loadable> Loadable::create(const std::string& filename, cudlaDev
         return nullptr;
     }
 
+    if (!obj->loadModuleAttributes()) {
+        return nullptr;
+    }
+
     return obj;
 }
 
-Loadable::Loadable(const string& filename, const cudlaDevHandle devHandle) noexcept
-    : filename(filename), devHandle(devHandle) {
-    cout << "loadable.cpp devHandle " << devHandle << endl; 
+Loadable::Loadable(const string& filename) noexcept
+    : filename(filename) {
 }
 
 Loadable::~Loadable() noexcept {
+    // First, free the buffers
+    freeBuffers();
+
     // Unload the module if it was loaded
     if (moduleHandle) {
         cudlaStatus status = cudlaModuleUnload(moduleHandle, 0);
@@ -36,7 +46,14 @@ Loadable::~Loadable() noexcept {
         }
     }
 
-    freeBuffers();
+    // Free the device handle if it was created
+    if (devHandle) {
+        cudlaStatus status = cudlaDestroyDevice(devHandle);
+        if (status != cudlaSuccess) {
+            cout << "cudlaDestroyDevice failed: " << status << endl;
+        }
+    }
+
 }
 
 bool Loadable::loadBinary() {
@@ -71,7 +88,7 @@ bool Loadable::loadModule() noexcept {
         return false;
     }
 
-    return loadModuleAttributes();
+    return true;
 }
 
 bool Loadable::loadModuleAttributes() noexcept {
@@ -85,7 +102,7 @@ bool Loadable::loadModuleAttributes() noexcept {
         return false;
     }
     if (attribute.numInputTensors != 1) {
-        cout << "Currently only support 1 input tensor, got: " << attribute.numInputTensors  << " might not work as expected" << endl;
+        cout << "Currently only support 1 input tensor, got: " << attribute.numInputTensors << " might not work as expected" << endl;
     }
     inputTensorDesc.resize(attribute.numInputTensors);
 
@@ -96,7 +113,7 @@ bool Loadable::loadModuleAttributes() noexcept {
         return false;
     }
     if (attribute.numOutputTensors != 1) {
-        cout << "Currently only support 1 output tensor, got: " << attribute.numOutputTensors  << " might not work as expected" << endl;
+        cout << "Currently only support 1 output tensor, got: " << attribute.numOutputTensors << " might not work as expected" << endl;
     }
     outputTensorDesc.resize(attribute.numOutputTensors);
 
@@ -116,6 +133,16 @@ bool Loadable::loadModuleAttributes() noexcept {
         return false;
     }
 
+    return true;
+}
+
+bool Loadable::createDevHandle(const uint64_t devId) noexcept {
+    // Create a device handle for the DLA
+    cudlaStatus status = cudlaCreateDevice(devId, &devHandle, CUDLA_CUDA_DLA);
+    if (status != cudlaSuccess) {
+        cout << "cudlaCreateDevice failed: " << status << endl;
+        return false;
+    }
     return true;
 }
 
@@ -187,10 +214,8 @@ bool Loadable::runTask(const cudaStream_t stream, const int buffIndex) const noe
     task.inputTensor = &bufferDLAInput[buffIndex];
     task.numOutputTensors = 1;
     task.outputTensor = &bufferDLAOutput[buffIndex];
-    task.waitEvents = NULL; 
+    task.waitEvents = NULL;
     task.signalEvents = NULL;
-
-    cout << "loadable.cpp devHandle " << devHandle << endl;
 
     cudlaStatus status = cudlaSubmitTask(devHandle, &task, 1, stream, 0);
     if (status != cudlaSuccess) {
@@ -199,6 +224,15 @@ bool Loadable::runTask(const cudaStream_t stream, const int buffIndex) const noe
     }
 
     return true;
+}
+
+std::tuple<int, int, int, int> Loadable::getInputTensorShape(int index) const noexcept {
+    if (index < 0 || index >= static_cast<int>(inputTensorDesc.size())) {
+        cout << "Index out of bounds for input tensor descriptors." << endl;
+        return std::make_tuple(-1, -1, -1, -1);
+    }
+    const auto& desc = inputTensorDesc[index];
+    return std::make_tuple(desc.n, desc.c, desc.h, desc.w);
 }
 
 void Loadable::printTensorDescHelper(const cudlaModuleTensorDescriptor& tensorDesc) const noexcept {
@@ -219,19 +253,6 @@ void Loadable::printTensorDescHelper(const cudlaModuleTensorDescriptor& tensorDe
 }
 
 void Loadable::freeBuffers() noexcept {
-    for (auto& buffer : bufferGPUInput) {
-        if (buffer) {
-            cudaFree(buffer);
-            buffer = nullptr;
-        }
-    }
-    for (auto& buffer : bufferGPUOutput) {
-        if (buffer) {
-            cudaFree(buffer);
-            buffer = nullptr;
-        }
-    }
-
     for (auto& buffer : bufferDLAInput) {
         if (buffer) {
             cudlaMemUnregister(devHandle, buffer);
@@ -241,6 +262,19 @@ void Loadable::freeBuffers() noexcept {
     for (auto& buffer : bufferDLAOutput) {
         if (buffer) {
             cudlaMemUnregister(devHandle, buffer);
+            buffer = nullptr;
+        }
+    }
+
+    for (auto& buffer : bufferGPUInput) {
+        if (buffer) {
+            cudaFree(buffer);
+            buffer = nullptr;
+        }
+    }
+    for (auto& buffer : bufferGPUOutput) {
+        if (buffer) {
+            cudaFree(buffer);
             buffer = nullptr;
         }
     }

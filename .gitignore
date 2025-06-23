@@ -8,6 +8,8 @@ example.jpg
 polyphase-filter-bank-generator
 *.bin
 *.nvdla
+*.nsys-rep
+*.csv
 __pycache__/
 runtime/model
 venv/

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <tuple>
 
 #include "cudla.h"
 #include "cuda_runtime.h"
@@ -10,7 +11,7 @@
 class Loadable {
 public:
     // Factory method to create a Loadable instance
-    static std::unique_ptr<Loadable> create(const std::string& filename, cudlaDevHandle devHandle);
+    static std::unique_ptr<Loadable> create(const std::string& filename, const uint64_t dlaId = 0);
 
     ~Loadable() noexcept;
 
@@ -30,10 +31,12 @@ public:
 
     bool runTask(const cudaStream_t stream, const int buffIndex) const noexcept;
 
+    std::tuple<int, int, int, int> getInputTensorShape(int index) const noexcept;
+
 private:
     std::string filename;
     size_t fileSize = 0;
-    // no owmer of the device handle, it is owned by the CUDLARuntime
+
     cudlaDevHandle devHandle = nullptr;
     cudlaModule moduleHandle = nullptr;
 
@@ -48,13 +51,15 @@ private:
     std::vector<uint64_t*> bufferDLAOutput;
 
     
-    explicit Loadable(const std::string& filename, cudlaDevHandle cudlaDevHandle) noexcept;
+    explicit Loadable(const std::string& filename) noexcept;
 
     bool loadBinary();
 
     bool loadModule() noexcept;
 
     bool loadModuleAttributes() noexcept;
+
+    bool createDevHandle(const uint64_t dlaId) noexcept;
 
     void printTensorDescHelper(const cudlaModuleTensorDescriptor& tensorDesc) const noexcept;
 

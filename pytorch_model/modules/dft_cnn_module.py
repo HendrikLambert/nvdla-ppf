@@ -10,7 +10,7 @@ class DFTCNNModule(nn.Module):
         Initializes the DFTCNNModule.
 
         Args:
-            N (int): Number of channels for the DFT. This should be a positive integer.
+            N (int): Number of channels for the DFT.
         """
 
         super().__init__()

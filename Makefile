@@ -5,12 +5,26 @@ export LD_LIBRARY_PATH=$(TENSORRT)/lib:$LD_LIBRARY_PATH
 
 # For scatch location
 USER := $(shell whoami)
+SCRATCH := /var/scratch/$(USER)
+
+help:
+	@echo "Available targets:"
+	@echo "  create_onnx_benchmarkfiles - Create ONNX benchmark files"
+	@echo "  create_nvdla_benchmarkfiles - Create NVDLA benchmark files"
+	@echo "  run_pytorch - Run the PyTorch model"
+	@echo "  compile_pytorch - Compile the PyTorch model to a loadable binary"
+	@echo "  test_pytorch - Run unit tests for the PyTorch model"
+	@echo "  model - Build the model in runtime"
+	@echo "  build_benchmark - Build the benchmark in runtime"
+	@echo "  clean - Clean up generated files"
+	@echo "  print_loadable - Print information about a loadable file"
+	@echo "  reference-model - Build the reference model"
 
 create_onnx_benchmarkfiles:
-	cd pytorch_model && python3 main.py --test --benchmark --type onnx --onnx_folder /var/scratch/$(USER)/$(onnx_dir)
+	cd pytorch_model && python3 main.py --test --benchmark --type onnx --onnx_folder $(SCRATCH)/$(onnx_dir)
 
 create_nvdla_benchmarkfiles:
-	cd pytorch_model && python3 main.py --benchmark --type nvdla --onnx_folder /var/scratch/$(USER)/$(onnx_dir) --nvdla_folder /var/scratch/$(USER)/$(nvdla_dir) --trtexec_location $(TRTEXEC) 
+	cd pytorch_model && python3 main.py --benchmark --type nvdla --onnx_folder $(SCRATCH)/$(onnx_dir) --nvdla_folder $(SCRATCH)/$(nvdla_dir) --trtexec_location $(TRTEXEC)
 
 run_pytorch:
 	cd pytorch_model && python3 main.py

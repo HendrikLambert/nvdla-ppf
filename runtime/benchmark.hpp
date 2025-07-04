@@ -40,7 +40,6 @@ private:
     std::ofstream csvFile;
     PowerSensor3::PowerSensor ps3;
     PowerSensor3::State start, stop;
-    // int abc, abc2;
 
     std::vector<std::string> files;
     std::vector<std::shared_ptr<CUDLARuntime>> runtimes;

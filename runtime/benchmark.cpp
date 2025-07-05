@@ -64,9 +64,14 @@ tuple<size_t, size_t, size_t> Benchmark::calculateBuffersAndRuns(std::tuple<int,
     if (buffers < MIN_BUFFERS) {
         buffers = MIN_BUFFERS;
     }
+    
     // We want to compute BATCHES_TO_RUN samples.
     size_t batchesPerBuffer = buffers * n;
     size_t runs = BATCHES_TO_RUN / batchesPerBuffer / dlaCount; // Number of runs we can do with the allocated buffers
+    // Ensure we have at least 1 run
+    if (runs == 0) {
+        runs = 1;
+    }
 
     // Calculate the number of samples per run
     size_t samplesPerRun = buffers * n;
@@ -77,16 +82,16 @@ tuple<size_t, size_t, size_t> Benchmark::calculateBuffersAndRuns(std::tuple<int,
 void Benchmark::run() {
     cout << "Running benchmark..." << endl;
 
-    // For each run
-    for (size_t r = 0; r < RUNS; r++) {
-        // For each run, we will run the files on both DLA engines
+    // For each iteration
+    for (size_t i = 0; i < ITERATIONS; i++) {
+        // For each iteration, we will run the files on both DLA engines
 
         for (const auto& file : files) {
 
             // On all runtimes
-            for (int i = 0; i < RUNTIMES; i++) {
-                cout << "Running benchmark for file: " << file << " on dla: " << i << " run " << (r+1) << "/" << RUNS << endl;
-                run_single_dla(file, i);
+            for (int r = 0; r < RUNTIMES; r++) {
+                cout << "Running benchmark for file: " << file << " on dla: " << r << " iteration " << (i+1) << "/" << ITERATIONS << endl;
+                run_single_dla(file, r);
             }
         }
     }

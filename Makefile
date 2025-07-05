@@ -21,10 +21,10 @@ help:
 	@echo "  reference-model - Build the reference model"
 
 create_onnx_benchmarkfiles:
-	cd pytorch_model && python3 main.py --test --benchmark --type onnx --onnx_folder $(SCRATCH)/$(onnx_dir)
+	cd pytorch_model && python3 main.py --test --benchmark --type onnx --onnx_folder $(SCRATCH)/$(onnx_folder)
 
 create_nvdla_benchmarkfiles:
-	cd pytorch_model && python3 main.py --benchmark --type nvdla --onnx_folder $(SCRATCH)/$(onnx_dir) --nvdla_folder $(SCRATCH)/$(nvdla_dir) --trtexec_location $(TRTEXEC)
+	cd pytorch_model && python3 main.py --benchmark --type nvdla --onnx_folder $(SCRATCH)/$(onnx_folder) --nvdla_folder $(SCRATCH)/$(nvdla_folder) --trtexec_location $(TRTEXEC)
 
 create_nvdla_custom:
 	cd pytorch_model && python3 main.py --buildONNX --model_type pfb_dft -b 256 --onnx_file $(SCRATCH)/custom/custom_pfb_dft.onnx --buildNVDLA --loadable_location $(SCRATCH)/custom/custom_pfb_dft.nvdla --trtexec_location $(TRTEXEC) --verbose
@@ -43,6 +43,9 @@ model:
 
 build_benchmark:
 	cd runtime && make benchmark
+
+run_benchmark:
+	./runtime/benchmark benchmark $(SCRATCH)/$(nvdla_folder) analysis/$(results)
 
 clean:
 	# cd pytorch_model && make clean

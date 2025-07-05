@@ -53,7 +53,7 @@ def plot_kaiser_weights(P=256, M=16):
     plt.show()
 
 
-@lru_cache(maxsize=20)
+@lru_cache(maxsize=10)
 def ref_kaiser_weights(
     nrChannels: int, nrTaps: int, type: str = "KAISER", reversed: bool = False
 ):
@@ -74,6 +74,7 @@ def ref_kaiser_weights(
     options = OPTIONS["PRINT_WEIGHTS"] | (
         OPTIONS["REVERSED_WEIGHTS"] if reversed else 0
     )
+    print("Generating reference weights with options:", options)
 
     res = subprocess.run(
         [REF_IMPLEMENTATION, str(nrChannels), str(nrTaps), type, str(options)],
@@ -85,5 +86,31 @@ def ref_kaiser_weights(
     weights = torch.tensor(weights, dtype=torch.float32)
     weights = weights.reshape((nrTaps, nrChannels)).T
     weights = weights.reshape(nrChannels, 1, 1, nrTaps)
+
+    return weights
+
+def generate_module_weights(
+    P: int, M: int, reversed: bool = False
+):
+    """
+    Generate module weights for a FIR CNN module.
+
+    Args:
+        P (int): Number of channels.
+        M (int): Number of taps.
+        reversed (bool): If True, reverse the weights.
+    Returns:
+        torch.Tensor: Weights tensor of shape (nrChannels * 2, 1, 1, nrTaps).
+    """
+    
+    # Initialize FIR filter with predefined weights
+    weights = ref_kaiser_weights(P, M, reversed=reversed)
+    # Line below is commented out because it reshapes the weights in a way that is not needed for the current implementation.
+    # self.weights = self.weights.reshape(P, 1, M, 1)
+
+    # Duplicate weights for complex channels, both channels have the same FIR filter
+    # so we can duplicate the weights for both real and imaginary parts.
+    weights = [weights[i // 2] for i in range(0, 2 * P)]
+    weights = torch.stack(weights, dim=0)
 
     return weights

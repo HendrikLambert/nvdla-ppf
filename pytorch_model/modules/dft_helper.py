@@ -1,12 +1,20 @@
 import torch
 from mpmath import mp
+from functools import lru_cache
 
-
+@lru_cache(maxsize=10)
 def create_dft_matrix(n: int) -> torch.Tensor:
     """
     Creates the (2n x 2n) real-valued matrix that performs the n-point DFT
     on interleaved real/imaginary inputs.
+    
+    Uses mpmath for high precision calculations of the twiddle factors.
+    Uses a cache to avoid recomputing the matrix for the same n.
+    
+    Args:
+        n (int): The number of complex DFT points.
     """
+    
     matrix = torch.zeros((2 * n, 2 * n), dtype=torch.float64)
     # Set precision for mpmath
     mp.dps = 64

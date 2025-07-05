@@ -19,7 +19,7 @@
 // Cache size in bytes. Consider every loction where the samples can be cached.
 #define CACHE_SIZE 4'000'000
 // How often we loop through all the files and execute them
-#define RUNS 20
+#define ITERATIONS 20
 
 
 class Benchmark {

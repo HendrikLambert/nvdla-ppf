@@ -2,13 +2,19 @@ import torch
 import subprocess
 import torch.nn as nn
 import os
-from onnx_helper import export_model
+from onnx_helper import export_general_model, export_pfb_model
 from modules.pfb_fft_module import PFBFFTModule
 from modules.pfb_dft_module import PFBDFTModule
+from modules.fir_cnn_module import FIRCNNModule
+from modules.fft_cnn_module import FFTCNNModule
+from modules.dft_cnn_module import DFTCNNModule
 
 # Constants for batch sizes, models, channels, and taps
-BATCH_SIZES = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
-MODELS = ["pfb_fft", "pfb_dft"]
+# BATCH_SIZES = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+# MODELS = ["pfb_fft", "pfb_dft", "fir", "dft", "fft"]
+MODELS = ["pfb_dft", "fir", "dft"]
+BATCH_SIZES = [2048, 4096, 6144, 8192]
+# MODELS = ["fft"]
 CHANNELS = 256
 TAPS = 16
 
@@ -28,7 +34,7 @@ def build_onnx_benchmark_files(dir: str):
     for b in BATCH_SIZES:
         for model_type in MODELS:
             model_name = generate_model_name(b, CHANNELS, TAPS, model_type)
-            file_path = f"{dir}/{model_name}.onnx"
+            file_path = f"{dir}{model_name}.onnx"
             export_onnx_model(b, CHANNELS, TAPS, model_type, file_path)
 
 
@@ -68,7 +74,7 @@ def generate_model_name(b: int, c: int, t: int, model_type: str) -> str:
     :param b: Batch size
     :param c: Number of channels
     :param t: Number of taps
-    :param model_type: Type of model ('pfb_fft' or 'pfb_dft')
+    :param model_type: Type of model ('pfb_fft', 'pfb_dft', 'fir', 'dft', 'fft')
     :return: Formatted model name
     """
 
@@ -76,8 +82,15 @@ def generate_model_name(b: int, c: int, t: int, model_type: str) -> str:
         return f"pfb_model_fft-c{c}-t{t}-b{b}"
     elif model_type == "pfb_dft":
         return f"pfb_model_dft-c{c}-t{t}-b{b}"
+    elif model_type == "fir":
+        return f"fir_model-c{c}-t{t}-b{b}"
+    elif model_type == "dft":
+        return f"dft_model-c{c}-b{b}"
+    elif model_type == "fft":
+        return f"fft_model-c{c}-b{b}"
 
-    raise ValueError("Invalid model type specified. Use 'pfb_fft' or 'pfb_dft'.")
+    raise ValueError("Invalid model type specified, valid options:" + str(MODELS))
+
 
 
 def build_loadable_from_onnx(
@@ -125,75 +138,33 @@ def export_onnx_model(b: int, c: int, t: int, model_type: str, file: str):
     :param b: Batch size
     :param c: Number of channels
     :param t: Number of taps
-    :param model_type: Type of model to export ('pfb_fft' or 'pfb_dft')
+    :param model_type: Type of model to export
     :param file: The location to save the ONNX file
     """
 
     # Check if the file name ends with '.onnx'
     if not file.endswith(".onnx"):
         raise ValueError("The file name should end with '.onnx'")
+    
+    print(f"Exporting {model_type} model with batch size {b}, channels {c}, taps {t} to {file}")
 
     if model_type == "pfb_fft":
-        pfb_model = PFBFFTModule(c, t, b)
+        model = PFBFFTModule(c, t, b)
+        export_pfb_model(model, file)
     elif model_type == "pfb_dft":
-        pfb_model = PFBDFTModule(c, t, b)
+        model = PFBDFTModule(c, t, b)
+        export_pfb_model(model, file)
+    elif model_type == "fir":
+        model = FIRCNNModule(c, t)
+        export_general_model(model, file, shape=(b, c * 2, 1, t))
+    elif model_type == "dft":
+        model = DFTCNNModule(c)
+        export_general_model(model, file, shape=(b, c * 2, 1, 1))
+    elif model_type == "fft":
+        model = FFTCNNModule(c)
+        export_general_model(model, file, shape=(b, c * 2, 1, 1))
     else:
-        raise ValueError("Invalid model type specified. Use 'pfb_fft' or 'pfb_dft'.")
-
-    print(
-        f"Exporting {model_type} model with batch size {b}, channels {c}, taps {t} to {file}"
-    )
-
-    # Export the model
-    export_model(pfb_model, file)
-
-
-def export_pfb_fft():
-    P = 8  # Number of channels
-    M = 16  # Number of taps
-    batch_size = 4
-
-    # Initialize the PFB model with FFT
-    # pfb_model = PFBModelDFT(P, M, batch_size)
-    pfb_model = PFBFFTModule(P, M, batch_size)
-
-    # Create example input tensor
-    example_inputs = torch.zeros(batch_size, P * 2, 1, M)
-    example_inputs[:, 0, 0, 0] = 1.0
-    example_inputs[:, 1, 0, 0] = 2.0
-
-    # Forward pass through the model
-    out = pfb_model(example_inputs)
-
-    print("Output shape:", out.shape)
-    print("Output values:", out.squeeze())
-
-    export_model(pfb_model, "pfb_model_fft", onnx_version=18)
-    # export_model(pfb_model, "pfb_model_dft.onnx")
-
-
-def export_pfb_dft():
-    P = 16  # Number of channels
-    M = 16  # Number of taps
-    batch_size = 2
-
-    # Initialize the PFB model with FFT
-    # pfb_model = PFBModelDFT(P, M, batch_size)
-    pfb_model = PFBDFTModule(P, M, batch_size)
-
-    # Create example input tensor
-    example_inputs = torch.zeros(batch_size, P * 2, 1, M)
-    example_inputs[:, 0, 0, 0] = 1.0
-    example_inputs[:, 1, 0, 0] = 2.0
-
-    # Forward pass through the model
-    out = pfb_model(example_inputs)
-
-    print("Output shape:", out.shape)
-    print("Output values:", out.squeeze())
-
-    export_model(pfb_model, "pfb_model_dft.onnx", onnx_version=18)
-    # export_model(pfb_model, "pfb_model_dft.onnx")
+        raise ValueError("Invalid model type specified, valid options:" + str(MODELS))
 
 
 def export_test_module():

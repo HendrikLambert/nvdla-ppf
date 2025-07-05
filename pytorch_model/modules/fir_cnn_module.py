@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
+from modules.fir_helper import generate_module_weights
 
 
 class FIRCNNModule(nn.Module):
-    def __init__(self, P: int, M: int, fir_weights: torch.Tensor):
+    def __init__(self, P: int, M: int, fir_weights: torch.Tensor | None = None):
         """
         Initializes the FIRCNNModule with FIR filter weights.
 
@@ -16,6 +17,10 @@ class FIRCNNModule(nn.Module):
 
         """
         super().__init__()
+        
+        # Initialize FIR filter weights if not provided
+        if fir_weights is None:
+            fir_weights = generate_module_weights(P, M, reversed=False)
 
         # Expected shape of fir_weights is (P * 2, 1, 1, M)
         shape = (P * 2, 1, 1, M)

@@ -9,6 +9,8 @@ using namespace std;
 
 Benchmark::Benchmark(const string powerSensor, const std::string csvFileName)
     : ps3(powerSensor) {
+    cout << "Initializing Benchmark with PowerSensor: " << powerSensor << endl;
+    cout << "CSV file: " << csvFileName << endl;
     csvFile.open(csvFileName, std::ios::out);
 }
 
@@ -43,7 +45,7 @@ void Benchmark::load_files(const string& dir) {
 
     try {
         for (const auto& entry : filesystem::directory_iterator(dir)) {
-            if (entry.is_regular_file()) {
+            if (entry.is_regular_file() && entry.path().extension() == ".nvdla") {
                 string filePath = entry.path().string();
                 files.push_back(filePath);
             }

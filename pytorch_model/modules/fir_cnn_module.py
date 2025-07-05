@@ -17,9 +17,11 @@ class FIRCNNModule(nn.Module):
         """
         super().__init__()
 
-        if fir_weights.shape != (P * 2, 1, 1, M):
+        # Expected shape of fir_weights is (P * 2, 1, 1, M)
+        shape = (P * 2, 1, 1, M)
+        if fir_weights.shape != shape:
             raise ValueError(
-                f"Expected fir_weights shape {(P*2, 1, M)}, got {fir_weights.shape}"
+                f"Expected fir_weights shape {shape}, got {fir_weights.shape}"
             )
 
         self.cnn = nn.Conv2d(P * 2, P * 2, kernel_size=(1, M), groups=P * 2, bias=False)

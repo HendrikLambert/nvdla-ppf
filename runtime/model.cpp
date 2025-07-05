@@ -17,9 +17,16 @@ void printTensorDesc(cudlaModuleTensorDescriptor* tensorDesc);
 
 using namespace std;
 
-int main() {
+int main(int argc, char *argv[]) {
+    // Check if first arg exists
+    if (argc < 2) {
+        std::cerr << "Error: No loadable file specified." << std::endl;
+        return -1;
+    }
+
     // Load loadable
-    const char *loadableFile = "pfb_model_dft-c256-t16-b1.nvdla";
+
+    const char *loadableFile = argv[1];
     unsigned char *loadableData = NULL;
 
     FILE *fp = NULL;
@@ -276,9 +283,9 @@ int main() {
     // for (unsigned int i = 0; i < 1024; i++) {
         __half val = hostOutputBuffer[i];
         float floatVal = __half2float(val);
-        // if (floatVal != 0.0f) {
+        if (floatVal != 0.0f) {
             printf("%.10f", floatVal);
-        // }
+        }
     }
     cout << endl;
 

@@ -3,21 +3,38 @@
 
 using namespace std;
 
-int main() {
+void printUsage(string programName) {
+    cout << "Usage:" << endl;
+    cout << "  " << programName << " benchmark <directory> <results.csv>" << endl;
+}
+
+int main(int argc, char* argv[]) {
     // Initialize the benchmark
-    Benchmark* benchmark = new Benchmark("/dev/ttyACM0", "benchmark_results.csv");
-    if (!benchmark->init()) {
-        cerr << "Failed to initialize benchmark." << endl;
+    if (argc != 4) {
+        printUsage(argv[0]);
         return -1;
     }
 
-    // Load files from the specified directory
-    string dir = "/var/scratch/dsl2511/loadables";
-    benchmark->load_files(dir);
+    // Init the benchmark
 
-    cout << "Benchmark initialized and files loaded successfully." << endl;
+    Benchmark* benchmark = new Benchmark("/dev/ttyACM0", string(argv[3]));
+    if (!benchmark->init()) {
+        cerr << "Failed to initialize benchmark." << endl;
+        delete benchmark;
+        return -1;
+    }
 
-    benchmark->run();
+    // Check if first arg equals benchmark
+    if (string(argv[1]) == "benchmark") {
+        cout << "Running benchmark... with " << argv[2] << endl;
+        // Load files from the specified directory
+        // string dir = "/var/scratch/dsl2511/loadables";
+        benchmark->load_files(string(argv[2]));
+        cout << "Benchmark initialized and files loaded successfully." << endl;
+        benchmark->run();
+    } else {
+        printUsage(argv[0]);
+    }
 
     delete benchmark;
     return 0;

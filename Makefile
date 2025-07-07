@@ -38,8 +38,8 @@ compile_pytorch:
 test_pytorch:
 	cd pytorch_model && python3 -m unittest discover -s tests
 
-model: 
-	cd runtime && make model
+build_simpleruntime: 
+	cd runtime && make simple
 
 build_benchmark:
 	cd runtime && make benchmark

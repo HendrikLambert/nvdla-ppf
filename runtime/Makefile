@@ -8,11 +8,11 @@ LinkerParms = -L/usr/local/cuda-12.6/targets/aarch64-linux/lib/ -lcudla -lcuda -
 
 OBJS = main.o loadable.o benchmark.o cudla_runtime.o
 
-model.o: model.cpp
-	$(CC) $(CompileParms) model.cpp
+simple.o: simple.cpp
+	$(CC) $(CompileParms) simple.cpp
 
-model: model.o
-	$(CC) model.o $(LinkerParms) -o model
+simple: simple.o
+	$(CC) simple.o $(LinkerParms) -o simple
 
 loadable.o: loadable.cpp loadable.hpp
 	$(CC) $(CompileParms) loadable.cpp
@@ -31,5 +31,5 @@ benchmark: $(OBJS)
 
 clean:
 	rm benchmark || echo "No benchmark to remove"
-	rm model || echo "No model to remove"
+	rm simple || echo "No simple to remove"
 	rm *.o || echo "No object files to remove"

@@ -10,10 +10,10 @@ from modules.fft_cnn_module import FFTCNNModule
 from modules.dft_cnn_module import DFTCNNModule
 
 # Constants for batch sizes, models, channels, and taps
-# BATCH_SIZES = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
-# MODELS = ["pfb_fft", "pfb_dft", "fir", "dft", "fft"]
-MODELS = ["pfb_dft", "fir", "dft"]
-BATCH_SIZES = [2048, 4096, 6144, 8192]
+BATCH_SIZES = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]
+MODELS = ["pfb_fft", "pfb_dft", "fir", "dft", "fft"]
+# MODELS = ["pfb_dft", "fir", "dft"]
+# BATCH_SIZES = [2048, 4096, 6144, 8192]
 # MODELS = ["fft"]
 CHANNELS = 256
 TAPS = 16

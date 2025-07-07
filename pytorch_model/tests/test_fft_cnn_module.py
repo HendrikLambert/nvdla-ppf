@@ -60,10 +60,11 @@ class TestFFTCNNModule(unittest.TestCase):
 
         self.assertEqual(output_model.shape, input_tensor.shape)
         self.assertTrue(
-            torch.allclose(output_model, output_ref, atol=1e-5),
+            torch.allclose(output_model, output_ref, atol=1e-5, rtol=1e-5),
             msg=(
                 f"FFT(N={N}, B={batch_size}) output values do not match reference.\n"
-                f"Max absolute difference: {torch.max(torch.abs(output_model - output_ref)).item():.6g}"
+                f"Max absolute difference: {torch.max(torch.abs(output_model - output_ref)).item():.6g}\n"
+                f"Max relative difference: {torch.max(torch.abs((output_model - output_ref) / output_ref)).item():.6g}"
             ),
         )
 

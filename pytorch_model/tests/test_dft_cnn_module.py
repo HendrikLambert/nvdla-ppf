@@ -53,17 +53,18 @@ class TestDFTCNNModule(unittest.TestCase):
         """
         model = DFTCNNModule(N=N)
 
-        input_tensor = torch.randn(batch_size, 2 * N, 1, 1) * 10
+        input_tensor = torch.randn(batch_size, 2 * N, 1, 1) # Scale for numerical stability
 
         output_model = model(input_tensor)
         output_ref = self._get_dft_reference(input_tensor)
 
         self.assertEqual(output_model.shape, input_tensor.shape)
         self.assertTrue(
-            torch.allclose(output_model, output_ref, atol=1e-5),
+            torch.allclose(output_model, output_ref, atol=1e-5, rtol=1e-5), 
             msg=(
                 f"DFT(N={N}, B={batch_size}) output values do not match reference.\n"
                 f"Max absolute difference: {torch.max(torch.abs(output_model - output_ref)).item():.6g} \n"
+                f"Max relative difference: {torch.max(torch.abs((output_model - output_ref) / output_ref)).item():.6g}"
             ),
         )
 

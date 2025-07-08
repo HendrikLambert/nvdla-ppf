@@ -21,7 +21,7 @@ Benchmark::~Benchmark() noexcept {
 
 bool Benchmark::init() {
     // Write header to csv file.
-    csvFile << "loadable,dla,buffers,runs,samples,energy,host_time,device_time" << endl;
+    csvFile << "loadable,dla,buffers,runs,samples,host_time,device_time,total_energy,base_energy" << endl;
 
     if (!CUDLARuntime::initializeCuda(0)) {
         cerr << "Failed to initialize CUDLARuntime." << endl;
@@ -117,8 +117,13 @@ void Benchmark::run_single_dla(const string& file, const int dla) {
     // Allocate the buffers
     loadable->allocateBuffers(buffers);
 
-    // Delay to ensure the buffer allocation isnt considered in the power draw.
+    // Delay to ensure the buffer allocation isnt considered in the base power draw.
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    // Start base power measurement
+    base_start = ps3.read();
+    // Wait for a short time to gather more samples.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    base_stop = ps3.read();
 
     cudaStream_t stream = runtime->getStream();
     cudaEvent_t startEvent, stopEvent;
@@ -168,15 +173,20 @@ void Benchmark::run_single_dla(const string& file, const int dla) {
 
     // Calculate statistics
     size_t samples = runs * samplesPerRun * 256; // 256 complex samples per buffer
-    float devicetime;
-    CHECK_CUDA_ERR(cudaEventElapsedTime(&devicetime, startEvent, stopEvent), "Failed to calculate elapsed time");
-    auto energyUsed = PowerSensor3::Joules(start, stop);
-    auto hosttime = PowerSensor3::seconds(start, stop) * 1000.0; // Convert to milliseconds
+    float deviceTime;
+    CHECK_CUDA_ERR(cudaEventElapsedTime(&deviceTime, startEvent, stopEvent), "Failed to calculate elapsed time");
+    auto totalEnergy = PowerSensor3::Joules(start, stop);
+    auto hostTime = PowerSensor3::seconds(start, stop) * 1000.0; // Convert to milliseconds
+
+    // Calculate base energy
+    auto baseDraw = PowerSensor3::Watt(base_start, base_stop);
+    auto baseEnergy = baseDraw * hostTime / 1000.0; // Convert to Joules
 
     // Write results to CSV file
-    // "loadable,dla,buffers,runs,samples,energy,host_time,device_time"
+    // "loadable,dla,buffers,runs,samples,host_time,device_time,total_energy,base_energy" << endl;
     csvFile << file << "," << dla << "," << buffers << "," << runs << ","
-        << samples << "," << energyUsed << "," << hosttime << "," << devicetime << endl;
+        << samples << "," << hostTime << "," << deviceTime << ","
+        << totalEnergy << "," << baseEnergy << endl;
 
     // Clean up events
     cudaStatus = cudaEventDestroy(startEvent);

@@ -15,7 +15,7 @@
 #define RUNTIMES 2
 #define MIN_BUFFERS 8
 // Every batch contains 256 complex samples (and the 15 other historical taps)
-#define BATCHES_TO_RUN 10'000
+#define BATCHES_TO_RUN 40'000
 // Cache size in bytes. Consider every loction where the samples can be cached.
 #define CACHE_SIZE 4'000'000
 // How often we loop through all the files and execute them

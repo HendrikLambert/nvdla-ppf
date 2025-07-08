@@ -9,8 +9,9 @@ polyphase-filter-bank-generator
 *.bin
 *.nvdla
 *.nsys-rep
-*.csv
 __pycache__/
-runtime/model
+runtime/simple
+runtime/acuracy
 runtime/benchmark
 venv/
+

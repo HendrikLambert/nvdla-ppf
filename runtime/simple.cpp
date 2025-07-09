@@ -24,6 +24,41 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // Optionally, two arguments can be provided for in and output data.
+    const char *inputFile = (argc > 2) ? argv[2] : NULL;
+    const char *outputFile = (argc > 3) ? argv[3] : NULL;
+
+    // Innput data
+    std::vector<unsigned char> inputData;
+
+
+    // If inputFile is provided, read data from it.
+    if (inputFile) {
+        std::ifstream inputStream(inputFile, std::ios::binary);
+        if (!inputStream) {
+            std::cerr << "Error: Unable to open input file " << inputFile << std::endl;
+            return -1;
+        }
+        // Read the entire file into inputData vector
+        inputStream.seekg(0, std::ios::end);
+        size_t inputSize = inputStream.tellg();
+        inputStream.seekg(0, std::ios::beg);
+        inputData.resize(inputSize);
+        inputStream.read(reinterpret_cast<char*>(inputData.data()), inputSize);
+        inputStream.close();
+    }
+
+    // Print first FP16 value if inputData is not empty
+    if (!inputData.empty()) {
+        if (inputData.size() < sizeof(__half)) {
+            std::cerr << "Error: Input data is smaller than expected." << std::endl;
+            return -1;
+        }
+        __half firstValue = *reinterpret_cast<__half*>(inputData.data());
+        std::cout << "First FP16 value in input data: " << __half2float(firstValue) << std::endl;
+    }
+
+
     // Load loadable
 
     const char *loadableFile = argv[1];
@@ -189,8 +224,8 @@ int main(int argc, char *argv[]) {
     // array[16] waarde 1, tap 0
 
 
-    hostInputBuffer[0] = __float2half(1.0f);
-    hostInputBuffer[1] = __float2half(2.0f);
+    // hostInputBuffer[0] = __float2half(1.0f);
+    // hostInputBuffer[1] = __float2half(2.0f);
     // hostInputBuffer[3] = __float2half(1.0f);
     // hostInputBuffer[16] = __float2half(2.0f);
     // hostInputBuffer[32] = __float2half(2.0f);
@@ -200,6 +235,20 @@ int main(int argc, char *argv[]) {
     // hostInputBuffer[256*16 + 16] = __float2half(1.0f);
     // hostInputBuffer[256*16 + 32] = __float2half(2.0f);
 
+    // If inputFile is provided, read data from it.
+    if (inputFile) {
+        // Check if inputData matches the expected size
+        if (inputData.size() != inputTensorDesc[0].size) {
+            std::cerr << "Error: Input data size is smaller than expected." << std::endl;
+            return -1;
+        }
+
+        // Copy input data to hostInputBuffer
+        for (size_t i = 0; i < inputData.size() / sizeof(__half); i++) {
+            // Convert unsigned char to __half
+            hostInputBuffer[i] = *reinterpret_cast<const __half*>(inputData.data() + i * sizeof(__half));
+        }
+    }
 
     memset(hostOutputBuffer, 0, outputTensorDesc[0].size);
 
@@ -278,6 +327,7 @@ int main(int argc, char *argv[]) {
     }
     
 
+
     // Check output data
     for (unsigned int i = 0; i < outputTensorDesc[0].size/2; i++) {
     // for (unsigned int i = 0; i < 1024; i++) {
@@ -288,6 +338,18 @@ int main(int argc, char *argv[]) {
         }
     }
     cout << endl;
+
+    // Write to output file if provided
+    if (outputFile) {
+        std::ofstream outputStream(outputFile, std::ios::binary);
+        if (!outputStream) {
+            std::cerr << "Error: Unable to open output file " << outputFile << std::endl;
+            return -1;
+        }
+        // Write the output data to the file
+        outputStream.write(reinterpret_cast<const char*>(hostOutputBuffer), outputTensorDesc[0].size);
+        outputStream.close();
+    }
 
     // Unregister DLA buffers
     dlaStatus = cudlaMemUnregister(devHandle, inputBufferDLA);
